@@ -7,16 +7,12 @@ import android.net.Uri
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageView
 import com.google.ar.core.AugmentedImage
-import com.google.ar.core.HitResult
-import com.google.ar.core.Plane
 import com.google.ar.core.TrackingState
 import com.google.ar.sceneform.AnchorNode
 import com.google.ar.sceneform.FrameTime
-import com.google.ar.sceneform.Node
 import com.google.ar.sceneform.rendering.ModelRenderable
 import com.google.ar.sceneform.ux.ArFragment
 import com.google.ar.sceneform.ux.TransformableNode
@@ -35,8 +31,6 @@ class MainActivity : AppCompatActivity() {
     // keyed by the augmented image in the database.
     private val augmentedImageMap = mutableMapOf<AugmentedImage, AnchorNode>()
 
-    private lateinit var node: AugmentedImageNode
-
     private var modelRenderable: ModelRenderable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,38 +45,9 @@ class MainActivity : AppCompatActivity() {
         arFragment = supportFragmentManager.findFragmentById(R.id.arFragment) as ArFragment
         fitToScanView = findViewById(R.id.image_view_fit_to_scan)
 
+        loadModel()
+
         arFragment?.arSceneView?.scene?.addOnUpdateListener(::onUpdateFrame)
-
-        node = AugmentedImageNode(this)
-
-        ModelRenderable.builder()
-            // R.raw.model_name is created by Sceneform plugin (see build.gradle for details)
-            .setSource(this, Uri.parse("file:///android_asset/models/earth_obj.sfb"))
-            .build()
-            .thenAccept { renderable -> modelRenderable = renderable }
-            .exceptionally { throwable ->
-                toast("Unable to load renderable")
-                null
-            }
-
-        // This is needed to place our model on the detected plane,
-        // at the place of the user's tap.
-//        arFragment?.setOnTapArPlaneListener { hitResult: HitResult, plane: Plane, motionEvent: MotionEvent ->
-//            if (modelRenderable == null) {
-//                return@setOnTapArPlaneListener
-//            }
-//
-//            // Create the Anchor at the place of the tap.
-//            val anchor = hitResult.createAnchor()
-//            val anchorNode = AnchorNode(anchor)
-//            anchorNode.setParent(arFragment?.arSceneView?.scene)
-//
-//            // Create the transformable model and add it to the anchor.
-//            val model = TransformableNode(arFragment?.transformationSystem)
-//            model.setParent(anchorNode)
-//            model.renderable = modelRenderable
-//            model.select()
-//        }
     }
 
     /**
@@ -145,16 +110,13 @@ class MainActivity : AppCompatActivity() {
 
                     // Create a new anchor for newly found images.
                     if (!augmentedImageMap.containsKey(augmentedImage)) {
-//                        node.setImage(augmentedImage)
-//                        augmentedImageMap[augmentedImage] = node
-//                        arFragment?.arSceneView?.scene?.addChild(node)
-
                         // Set the anchor based on the center of the image.
                         val anchor = augmentedImage.createAnchor(augmentedImage.centerPose)
 
                         val anchorNode = AnchorNode(anchor)
                         anchorNode.setParent(arFragment?.arSceneView?.scene)
 
+                        // This is needed to prevent multiple model creation
                         augmentedImageMap[augmentedImage] = anchorNode
 
                         // Create the transformable model and add it to the anchor.
@@ -170,5 +132,16 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun loadModel() {
+        ModelRenderable.builder()
+            .setSource(this, Uri.parse("file:///android_asset/models/earth_obj.sfb"))
+            .build()
+            .thenAccept { renderable -> modelRenderable = renderable }
+            .exceptionally { throwable ->
+                toast("Unable to load renderable")
+                null
+            }
     }
 }

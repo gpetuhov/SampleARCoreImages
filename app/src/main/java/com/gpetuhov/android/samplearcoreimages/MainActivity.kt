@@ -16,6 +16,7 @@ import com.google.ar.core.Plane
 import com.google.ar.core.TrackingState
 import com.google.ar.sceneform.AnchorNode
 import com.google.ar.sceneform.FrameTime
+import com.google.ar.sceneform.Node
 import com.google.ar.sceneform.rendering.ModelRenderable
 import com.google.ar.sceneform.ux.ArFragment
 import com.google.ar.sceneform.ux.TransformableNode
@@ -32,7 +33,7 @@ class MainActivity : AppCompatActivity() {
 
     // Augmented image and its associated center pose anchor,
     // keyed by the augmented image in the database.
-    private val augmentedImageMap = mutableMapOf<AugmentedImage, AugmentedImageNode>()
+    private val augmentedImageMap = mutableMapOf<AugmentedImage, AnchorNode>()
 
     private lateinit var node: AugmentedImageNode
 
@@ -66,22 +67,22 @@ class MainActivity : AppCompatActivity() {
 
         // This is needed to place our model on the detected plane,
         // at the place of the user's tap.
-        arFragment?.setOnTapArPlaneListener { hitResult: HitResult, plane: Plane, motionEvent: MotionEvent ->
-            if (modelRenderable == null) {
-                return@setOnTapArPlaneListener
-            }
-
-            // Create the Anchor at the place of the tap.
-            val anchor = hitResult.createAnchor()
-            val anchorNode = AnchorNode(anchor)
-            anchorNode.setParent(arFragment?.arSceneView?.scene)
-
-            // Create the transformable model and add it to the anchor.
-            val model = TransformableNode(arFragment?.transformationSystem)
-            model.setParent(anchorNode)
-            model.renderable = modelRenderable
-            model.select()
-        }
+//        arFragment?.setOnTapArPlaneListener { hitResult: HitResult, plane: Plane, motionEvent: MotionEvent ->
+//            if (modelRenderable == null) {
+//                return@setOnTapArPlaneListener
+//            }
+//
+//            // Create the Anchor at the place of the tap.
+//            val anchor = hitResult.createAnchor()
+//            val anchorNode = AnchorNode(anchor)
+//            anchorNode.setParent(arFragment?.arSceneView?.scene)
+//
+//            // Create the transformable model and add it to the anchor.
+//            val model = TransformableNode(arFragment?.transformationSystem)
+//            model.setParent(anchorNode)
+//            model.renderable = modelRenderable
+//            model.select()
+//        }
     }
 
     /**
@@ -144,9 +145,23 @@ class MainActivity : AppCompatActivity() {
 
                     // Create a new anchor for newly found images.
                     if (!augmentedImageMap.containsKey(augmentedImage)) {
-                        node.setImage(augmentedImage)
-                        augmentedImageMap[augmentedImage] = node
-                        arFragment?.arSceneView?.scene?.addChild(node)
+//                        node.setImage(augmentedImage)
+//                        augmentedImageMap[augmentedImage] = node
+//                        arFragment?.arSceneView?.scene?.addChild(node)
+
+                        // Set the anchor based on the center of the image.
+                        val anchor = augmentedImage.createAnchor(augmentedImage.centerPose)
+
+                        val anchorNode = AnchorNode(anchor)
+                        anchorNode.setParent(arFragment?.arSceneView?.scene)
+
+                        augmentedImageMap[augmentedImage] = anchorNode
+
+                        // Create the transformable model and add it to the anchor.
+                        val model = TransformableNode(arFragment?.transformationSystem)
+                        model.setParent(anchorNode)
+                        model.renderable = modelRenderable
+                        model.select()
                     }
                 }
 

@@ -1,9 +1,9 @@
 # SampleARCoreImages
 Android ARCore Augmented Images example.
 
-## Image used
+## Images used
 
-Earth image taken from Google Augmented Image sample:
+Earth and Fit_to_scan images taken from Google Augmented Image sample:
 
 https://github.com/google-ar/sceneform-android-sdk/tree/master/samples/augmentedimage
 

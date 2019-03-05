@@ -63,7 +63,7 @@
     file: 'sampledata/models/earth_obj.obj',
     name: 'earth_obj',
     recenter: 'root',
-    scale: 0.49068099999999998,
+    scale: 0.10,
   },
   samplers: [
     {

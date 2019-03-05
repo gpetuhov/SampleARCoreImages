@@ -3,15 +3,22 @@ package com.gpetuhov.android.samplearcoreimages
 import android.app.Activity
 import android.app.ActivityManager
 import android.content.Context
+import android.net.Uri
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageView
 import com.google.ar.core.AugmentedImage
+import com.google.ar.core.HitResult
+import com.google.ar.core.Plane
 import com.google.ar.core.TrackingState
+import com.google.ar.sceneform.AnchorNode
 import com.google.ar.sceneform.FrameTime
+import com.google.ar.sceneform.rendering.ModelRenderable
 import com.google.ar.sceneform.ux.ArFragment
+import com.google.ar.sceneform.ux.TransformableNode
 import com.pawegio.kandroid.toast
 
 class MainActivity : AppCompatActivity() {
@@ -22,6 +29,14 @@ class MainActivity : AppCompatActivity() {
 
     private var arFragment: ArFragment? = null
     private var fitToScanView: ImageView? = null
+
+    // Augmented image and its associated center pose anchor,
+    // keyed by the augmented image in the database.
+    private val augmentedImageMap = mutableMapOf<AugmentedImage, AugmentedImageNode>()
+
+    private lateinit var node: AugmentedImageNode
+
+    private var modelRenderable: ModelRenderable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,6 +51,37 @@ class MainActivity : AppCompatActivity() {
         fitToScanView = findViewById(R.id.image_view_fit_to_scan)
 
         arFragment?.arSceneView?.scene?.addOnUpdateListener(::onUpdateFrame)
+
+        node = AugmentedImageNode(this)
+
+        ModelRenderable.builder()
+            // R.raw.model_name is created by Sceneform plugin (see build.gradle for details)
+            .setSource(this, Uri.parse("file:///android_asset/models/earth_obj.sfb"))
+            .build()
+            .thenAccept { renderable -> modelRenderable = renderable }
+            .exceptionally { throwable ->
+                toast("Unable to load renderable")
+                null
+            }
+
+        // This is needed to place our model on the detected plane,
+        // at the place of the user's tap.
+        arFragment?.setOnTapArPlaneListener { hitResult: HitResult, plane: Plane, motionEvent: MotionEvent ->
+            if (modelRenderable == null) {
+                return@setOnTapArPlaneListener
+            }
+
+            // Create the Anchor at the place of the tap.
+            val anchor = hitResult.createAnchor()
+            val anchorNode = AnchorNode(anchor)
+            anchorNode.setParent(arFragment?.arSceneView?.scene)
+
+            // Create the transformable model and add it to the anchor.
+            val model = TransformableNode(arFragment?.transformationSystem)
+            model.setParent(anchorNode)
+            model.renderable = modelRenderable
+            model.select()
+        }
     }
 
     /**
@@ -96,19 +142,16 @@ class MainActivity : AppCompatActivity() {
                 TrackingState.TRACKING -> {
                     fitToScanView?.visibility = View.GONE
 
-                    // TODO: implement
                     // Create a new anchor for newly found images.
-//                        if (!augmentedImageMap.containsKey(augmentedImage)) {
-//                            val node = AugmentedImageNode(this)
-//                            node.setImage(augmentedImage)
-//                            augmentedImageMap.put(augmentedImage, node)
-//                            arFragment?.arSceneView?.scene?.addChild(node)
-//                        }
+                    if (!augmentedImageMap.containsKey(augmentedImage)) {
+                        node.setImage(augmentedImage)
+                        augmentedImageMap[augmentedImage] = node
+                        arFragment?.arSceneView?.scene?.addChild(node)
+                    }
                 }
 
                 TrackingState.STOPPED -> {
-                    // TODO: implement
-//                        augmentedImageMap.remove(augmentedImage)
+                    augmentedImageMap.remove(augmentedImage)
                 }
             }
         }

@@ -84,31 +84,31 @@ class MainActivity : AppCompatActivity() {
         for (augmentedImage in updatedAugmentedImages) {
             val trackingState = augmentedImage.trackingState
 
-            if (trackingState != null) {
-                when (trackingState) {
-                    TrackingState.PAUSED -> {
-                        // When an image is in PAUSED state, but the camera is not PAUSED, it has been detected,
-                        // but not yet tracked.
-                        // Do nothing
-                    }
+            trackingState ?: continue
 
-                    TrackingState.TRACKING -> {
-                        fitToScanView?.visibility = View.GONE
+            when (trackingState) {
+                TrackingState.PAUSED -> {
+                    // When an image is in PAUSED state, but the camera is not PAUSED, it has been detected,
+                    // but not yet tracked.
+                    // Do nothing
+                }
 
-                        // TODO: implement
-                        // Create a new anchor for newly found images.
+                TrackingState.TRACKING -> {
+                    fitToScanView?.visibility = View.GONE
+
+                    // TODO: implement
+                    // Create a new anchor for newly found images.
 //                        if (!augmentedImageMap.containsKey(augmentedImage)) {
 //                            val node = AugmentedImageNode(this)
 //                            node.setImage(augmentedImage)
 //                            augmentedImageMap.put(augmentedImage, node)
 //                            arFragment?.arSceneView?.scene?.addChild(node)
 //                        }
-                    }
+                }
 
-                    TrackingState.STOPPED -> {
-                        // TODO: implement
+                TrackingState.STOPPED -> {
+                    // TODO: implement
 //                        augmentedImageMap.remove(augmentedImage)
-                    }
                 }
             }
         }

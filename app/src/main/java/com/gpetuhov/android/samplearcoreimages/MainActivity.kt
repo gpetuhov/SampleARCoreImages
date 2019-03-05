@@ -18,6 +18,12 @@ import com.google.ar.sceneform.ux.ArFragment
 import com.google.ar.sceneform.ux.TransformableNode
 import com.pawegio.kandroid.toast
 
+// App detects Earth image (saved into images database inside the assets folder)
+// and draws Earth model above the detected image.
+
+// To test the app open default.jpg image from the assets folder
+// and try to detect it with the app.
+
 class MainActivity : AppCompatActivity() {
 
     companion object {
@@ -99,37 +105,11 @@ class MainActivity : AppCompatActivity() {
             trackingState ?: continue
 
             when (trackingState) {
-                TrackingState.PAUSED -> {
-                    // When an image is in PAUSED state, but the camera is not PAUSED, it has been detected,
-                    // but not yet tracked.
-                    // Do nothing
-                }
-
-                TrackingState.TRACKING -> {
-                    fitToScanView?.visibility = View.GONE
-
-                    // Create a new anchor for newly found images.
-                    if (!augmentedImageMap.containsKey(augmentedImage)) {
-                        // Set the anchor based on the center of the image.
-                        val anchor = augmentedImage.createAnchor(augmentedImage.centerPose)
-
-                        val anchorNode = AnchorNode(anchor)
-                        anchorNode.setParent(arFragment?.arSceneView?.scene)
-
-                        // This is needed to prevent multiple model creation
-                        augmentedImageMap[augmentedImage] = anchorNode
-
-                        // Create the transformable model and add it to the anchor.
-                        val model = TransformableNode(arFragment?.transformationSystem)
-                        model.setParent(anchorNode)
-                        model.renderable = modelRenderable
-                        model.select()
-                    }
-                }
-
-                TrackingState.STOPPED -> {
-                    augmentedImageMap.remove(augmentedImage)
-                }
+                // When an image is in PAUSED state, but the camera is not PAUSED,
+                // it has been detected, but not yet tracked.
+                TrackingState.PAUSED -> { /* Do nothing */}
+                TrackingState.TRACKING -> addModelForImage(augmentedImage)
+                TrackingState.STOPPED -> augmentedImageMap.remove(augmentedImage)
             }
         }
     }
@@ -143,5 +123,28 @@ class MainActivity : AppCompatActivity() {
                 toast("Unable to load renderable")
                 null
             }
+    }
+
+    private fun addModelForImage(augmentedImage: AugmentedImage) {
+        fitToScanView?.visibility = View.GONE
+
+        // If model not added yet
+        if (!augmentedImageMap.containsKey(augmentedImage)) {
+            // Set the anchor based on the center of the detected image.
+            val anchor = augmentedImage.createAnchor(augmentedImage.centerPose)
+
+            // Create node and set scene as parent
+            val anchorNode = AnchorNode(anchor)
+            anchorNode.setParent(arFragment?.arSceneView?.scene)
+
+            // This is needed to prevent multiple model creation
+            augmentedImageMap[augmentedImage] = anchorNode
+
+            // Create the transformable model and add it to the anchor.
+            val model = TransformableNode(arFragment?.transformationSystem)
+            model.setParent(anchorNode)
+            model.renderable = modelRenderable
+            model.select()
+        }
     }
 }
